@@ -28,24 +28,53 @@ https://www.w3.org/TR/wai-aria-practices-1.1/examples/listbox/listbox-collapsibl
 */
 
 import "./index.css";
-import React from "react";
+import React, { Component, Children, cloneElement } from "react";
 import PropTypes from "prop-types";
 
-class Select extends React.Component {
+class Select extends Component {
+  state = {
+    isOpen: false,
+    selectedValue: this.props.defaultValue
+  }
+
+  onSelect = value => this.setState({ selectedValue: value }, console.log(value))
+
   static propTypes = {
     onChange: PropTypes.func,
     value: PropTypes.any,
     defaultValue: PropTypes.any
   };
 
+  isControlled() {
+    const { value } = this.props
+
+    return (value !== undefined)
+  }
+
   render() {
-    const isOpen = false;
+    const  { isOpen, selectedValue } = this.state;
+    const { children } = this.props
+
+    const cloned = Children.map(children, (child, i) => {
+      return cloneElement(child, {
+        onSelect: () => this.isControlled() ? this.props.onChange(child.props.value) : this.onSelect(child.props.value)
+      })
+    })
+
+    const selectValue = this.isControlled() ? this.props.value : selectedValue
+
     return (
-      <div className="select">
+      <div className="select" onClick={() => this.setState(({ isOpen }) => ({ isOpen: !isOpen }))}>
         <button className="label">
-          label <span className="arrow">▾</span>
+          {selectValue === null ? 'label' : selectValue} <span className="arrow">▾</span>
         </button>
-        {isOpen && <ul className="options">{this.props.children}</ul>}
+        {isOpen && (
+          <ul className="options">
+            {
+              cloned
+            }
+          </ul>
+        )}
       </div>
     );
   }
@@ -53,7 +82,7 @@ class Select extends React.Component {
 
 class Option extends React.Component {
   render() {
-    return <li className="option">{this.props.children}</li>;
+    return <li className="option" onClick={this.props.onSelect}>{this.props.children}</li>;
   }
 }
 
